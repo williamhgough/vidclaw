@@ -282,7 +282,7 @@ npm_install_dependencies() {
   if [[ -f "${REPO_ROOT}/package-lock.json" ]]; then
     run_cmd "${NPM_BIN}" ci
   else
-    run_cmd "${NPM_BIN}" install --production=false
+    run_cmd "${NPM_BIN}" install --include=dev
   fi
 }
 
