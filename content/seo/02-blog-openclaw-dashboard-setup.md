@@ -1,138 +1,126 @@
-# OpenClaw Control UI: Your Agent's Built-In Command Center
+# How to Set Up VidClaw: A Self-Hosted Dashboard for Your OpenClaw AI Agent
 
-*A practical tour of the browser dashboard that ships with OpenClaw — no extra install required.*
+*A step-by-step guide to installing and configuring VidClaw on your own server.*
 
 ---
 
-If you're running [OpenClaw](https://github.com/openclaw/openclaw), you already have a dashboard. Most people don't know it exists.
+If you're running an [OpenClaw](https://github.com/openclaw/openclaw) AI agent, you've probably hit the point where managing everything through chat feels like herding cats. Tasks pile up, you lose track of token usage, and editing your agent's personality means SSH-ing in and hand-editing markdown files.
 
-The Gateway that powers OpenClaw also serves a browser-based Control UI — kanban-style task management, model switching, cron job editing, config patching, skill toggling, and live log tailing. All from `http://localhost:18789/`.
+VidClaw fixes this. It's an open-source, self-hosted dashboard that gives you a visual command center for your OpenClaw agent — kanban boards, usage tracking, model switching, and more.
 
-This is what I use instead of herding everything through chat.
+Here's how to get it running in under five minutes.
 
-## What You Already Have
+## Prerequisites
 
-OpenClaw's Gateway runs on port `18789` by default. When you start it, the Control UI is already there — no plugin, no separate download.
+You'll need:
 
-```bash
-openclaw gateway
-```
+- A server (VPS, homelab box, or even a Raspberry Pi) running Linux
+- [OpenClaw](https://github.com/openclaw/openclaw) installed and running
+- Node.js 18+ (the installer handles this if you don't have it)
+- Git
 
-Then open your browser to **`http://127.0.0.1:18789/`**. That's it.
+## Step 1: Install VidClaw
 
-If you're on a different machine on the same Tailscale network, the UI is also reachable over HTTPS via Tailscale Serve — no SSH tunnel needed.
-
-## Accessing It Remotely Over Tailscale
-
-The config I run keeps the Gateway on loopback and uses Tailscale Serve to proxy it:
-
-```json
-{
-  "gateway": {
-    "bind": "loopback",
-    "tailscale": { "mode": "serve" }
-  }
-}
-```
-
-Start the gateway:
-```bash
-openclaw gateway
-```
-
-Open **`https://<your-machine>.ts.net/`** from any browser on your Tailnet. The Control UI is there with a valid HTTPS cert — no tunnel, no port forwarding.
-
-## First-Time Pairing
-
-If you connect from a new browser or device, you'll see `"disconnected (1008): pairing required"`. This is normal — it's a security check.
-
-Approve it from the gateway host:
+One command does everything:
 
 ```bash
-openclaw devices list
-# Find the pending request ID
-openclaw devices approve <requestId>
+curl -fsSL vidclaw.com/install.sh | bash
 ```
 
-Local loopback connections are auto-approved. Tailnet and LAN connections need explicit approval once per browser profile.
+This installs Node.js and Git if missing, clones the VidClaw repo, installs dependencies, and sets up a systemd service. It also configures Tailscale for secure remote access.
 
-## What the Control UI Actually Does
+If you prefer localhost-only access (e.g., you'll use an SSH tunnel):
 
-### Chat
+```bash
+curl -fsSL vidclaw.com/install.sh | bash -s -- --no-tailscale
+```
 
-The same chat interface you'd get in a terminal, but in a browser. Chat history, streaming responses, tool call cards, and the ability to inject messages. Model and thinking-mode pickers in the header are persistent session overrides — useful for quick experiments.
+## Step 2: Access the Dashboard
 
-### Task Board
+**Local access:**
+Open `http://localhost:3333` in your browser.
 
-The `/tasks` command in any chat session opens the background task board. But you can also see this directly in the UI — it shows all queued, running, and completed tasks across ACP runs, subagent spawns, isolated cron jobs, and CLI operations.
+**Remote access via Tailscale:**
+After install, VidClaw is available at `https://your-machine.your-tailnet.ts.net:8443`.
 
-Each task shows runtime, status, timing, and error detail. From here you can cancel a running task or change its notification policy.
+**Remote access via SSH tunnel:**
+```bash
+ssh -L 3333:localhost:3333 user@your-server
+```
+Then open `http://localhost:3333` on your local machine.
 
-### Cron Jobs Panel
+## Step 3: Tour the Dashboard
 
-Full CRUD for cron jobs: list, add, edit, run, enable, and disable. Shows run history. You can configure:
-- Schedule (cron expression or interval)
-- Session target (main, isolated, or named session)
-- Payload type (systemEvent for main-session or agentTurn for isolated)
-- Delivery mode (announce to channel, webhook, or none)
-- Advanced options: delete-after-run, exact/stagger cron timing, model/thinking overrides
+Once you're in, you'll see six main panels:
 
-Changes take effect immediately — no config file editing required.
+### Kanban Task Board
+This is your agent's work queue. Create cards, set priorities (low/medium/high/critical), and assign specific skills. Cards flow through four columns: Backlog → Todo → In Progress → Done.
+
+Your agent checks this board automatically — every 2 minutes via cron or every 30 minutes via heartbeat. You can also hit "Run Now" on any task for immediate execution.
+
+### Usage Tracking
+See real-time token consumption and cost estimates. The progress bars match Anthropic's rate-limit windows, so you can plan heavy workloads without getting throttled.
+
+### Model Switching
+Switch between Claude models (Sonnet, Opus, Haiku) directly from the navbar dropdown. VidClaw hot-reloads the OpenClaw config — no restart required.
 
 ### Skills Manager
+Browse all bundled and workspace skills. Toggle them on/off or create custom skills. Changes take effect on the agent's next session.
 
-Browse all installed skills. Toggle them on or off. Install new ones from ClawHub directly. Update API keys for skill credentials. The agent picks up skill changes on its next session automatically.
+### Soul Editor
+Edit SOUL.md, IDENTITY.md, USER.md, and AGENTS.md with a proper editor. Version history lets you revert if a personality tweak goes sideways. Six starter persona templates are included.
 
-### Config Editor
+### Activity Calendar
+A monthly heatmap showing when your agent was active and what it worked on, parsed from memory files and task history.
 
-View and patch `~/.openclaw/openclaw.json` directly from the UI. The form mode renders schema metadata (titles, descriptions, nested structure) and validates before write. If you prefer raw JSON, there's an editor for that too — with a safe round-trip guard that prevents you from accidentally corrupting SecretRef objects.
+## Step 4: Create Your First Task
 
-There's also a "apply + restart" button that validates the config and restarts the gateway in one step.
+1. Click **+ New Task** on the Kanban board
+2. Give it a title (e.g., "Write a README for my side project")
+3. Set priority to **Medium**
+4. Optionally assign a skill (e.g., "writer")
+5. Click **Create** — the card lands in Backlog
+6. Drag it to **Todo**
 
-### Sessions Panel
+Your agent will pick it up on the next cron cycle (within 2 minutes) or heartbeat (within 30 minutes). Watch it move to "In Progress" and eventually "Done."
 
-List all active sessions. Per-session overrides for model, thinking, reasoning, and fast/verbose modes. Lets you steer subagents or isolated sessions without touching their config files.
+## Step 5: Customize Your Agent's Personality
 
-### Channels Panel
+Head to the **Soul Editor** tab. Here you can shape how your agent thinks, writes, and behaves. The key files:
 
-See all configured channels (Discord, Telegram, Signal, etc.) with their enabled status and login state. For channels that support QR login, there's a QR code directly in the UI.
+- **SOUL.md** — Core personality and values
+- **IDENTITY.md** — Name, voice, style
+- **USER.md** — Information about you (so the agent understands context)
+- **AGENTS.md** — Operating instructions and workspace rules
 
-### Logs Tab
+Edit, save, and your agent picks up changes on the next session.
 
-Live tail of gateway file logs with filter and export. Useful when something breaks and you need to see what the gateway was doing without grep-ing a log file.
+## Keeping VidClaw Updated
 
-### System Health
+```bash
+cd ~/vidclaw  # or wherever you installed it
+./update.sh
+```
 
-Status snapshot: gateway health, configured models, active sessions, task counts. Same data as `openclaw status` but in a webpage.
+This pulls the latest changes and restarts the service.
 
-## What It Does NOT Do
+## Troubleshooting
 
-The Control UI is a management surface — it's not meant to replace your normal chat interface for daily work. It's where you go to:
-- Configure the system (not prompt the agent)
-- Debug issues (not run production tasks)
-- Manage credentials and skills (not have conversations)
+**Dashboard won't load?**
+- Check the service: `./status.sh`
+- View logs: `./logs.sh`
+- Ensure port 3333 isn't occupied: `lsof -i :3333`
 
-For daily interaction, Discord, Telegram, or whichever channel you prefer is still the right place.
+**Agent not picking up tasks?**
+- Verify OpenClaw is running: `openclaw gateway status`
+- Check that cron or heartbeat is configured in your agent's AGENTS.md
 
-## Keeping It Secure
+## What's Next
 
-The Control UI is an admin surface. OpenClaw enforces auth at the WebSocket handshake — you need a token, password, or Tailscale identity headers to connect. By default it binds to loopback only, so nobody on the network can reach it unless you explicitly configure remote access.
+VidClaw is in beta and actively developed. Follow [@woocassh](https://x.com/woocassh) for updates, or star the [GitHub repo](https://github.com/madrzak/vidclaw) to stay in the loop.
 
-If you're exposing it via Tailscale Serve, the recommended setup is:
-- `bind: "loopback"` (Gateway stays local)
-- `tailscale: { mode: "serve" }` (Tailscale proxies HTTPS)
-- `gateway.auth.allowTailscale: true` (Serve identity headers satisfy auth)
-
-This way only devices on your Tailnet can reach the UI, and they authenticate via Tailscale rather than a shared secret.
-
-## Why I Use It
-
-Before I found the Control UI, I was SSH-ing into the server to edit markdown files, grep-ing logs, and managing cron jobs by hand. It worked, but it meant switching contexts constantly.
-
-Now: when something breaks, I open the dashboard first. When I need to tweak a cron schedule, I use the form editor. When I want to check what the agent actually did this week, I look at the task history.
-
-It's not a flagship feature — it's infrastructure. But it's the difference between managing OpenClaw through scattered terminal sessions and having an actual ops center.
+If you're running AI agents in production, a visual dashboard isn't a luxury — it's a necessity. VidClaw gives you that without sending a single byte to someone else's server.
 
 ---
 
-*OpenClaw is open-source and MIT-licensed. The Control UI ships in the box.*
+*VidClaw is MIT-licensed and free forever. [Get started →](https://github.com/madrzak/vidclaw)*
