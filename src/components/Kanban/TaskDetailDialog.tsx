@@ -265,11 +265,20 @@ export default function TaskDetailDialog({ open, onClose, task }: TaskDetailDial
                 {isInProgress && elapsed && <span className="text-amber-400 font-medium flex items-center gap-0.5"><Clock size={10} />{elapsed}</span>}
               </div>
             )}
-            {task.source && (
-              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mt-1">
-                <MessageCircle size={12} className="text-blue-400" />
-                <span>Source: <span className="text-blue-400 font-medium">{task.source}</span></span>
-                {task.sourceMessageId && <span className="text-muted-foreground/60">#{task.sourceMessageId}</span>}
+            {(task.subagentId || task.source) && (
+              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mt-1 flex-wrap">
+                {task.subagentId && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400">
+                    <Bot size={10} /> Assignee {task.subagentId.slice(0, 8)}
+                  </span>
+                )}
+                {task.source && (
+                  <>
+                    <MessageCircle size={12} className="text-blue-400" />
+                    <span>Source: <span className="text-blue-400 font-medium">{task.source}</span></span>
+                    {task.sourceMessageId && <span className="text-muted-foreground/60">#{task.sourceMessageId}</span>}
+                  </>
+                )}
               </div>
             )}
           </div>

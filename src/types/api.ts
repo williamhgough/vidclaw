@@ -36,6 +36,7 @@ export interface Task {
   source: string | null
   sourceMessageId: string | null
   subagentId: string | null
+  assigneeId?: string | null
   pickedUp: boolean
   attachments: Attachment[]
   previousStatus: string | null
@@ -73,6 +74,7 @@ export interface UpdateTaskRequest {
   error?: string | null
   order?: number
   subagentId?: string | null
+  assigneeId?: string | null
   channel?: string | null
   source?: string | null
   sourceMessageId?: string | null

@@ -2,7 +2,6 @@ node_modules/
 dist/
 package-lock.json
 pnpm-lock.yaml
-data/*.json
 server/data/channels.json
 *.log
 settings.local.json
@@ -13,3 +12,5 @@ CLAUDE.md
 .env.*.local
 seed-demo.js
 openclaw-ref/
+# runtime state kept outside the app tree when VIDCLAW_DATA_DIR is set
+vidclaw-data/

@@ -256,7 +256,7 @@ export default function TaskCard({ task, onEdit, onView, onDelete, onRun, onTogg
           <span>Started {formatTime(task.startedAt, timezone)}</span>
           {elapsed && <span className="text-amber-400 font-medium flex items-center gap-0.5"><Clock size={10} />{elapsed}</span>}
           {task.subagentId && (
-            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-purple-500/20 text-purple-400 font-mono truncate max-w-[80px]" title={task.subagentId}>
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-purple-500/20 text-purple-400 font-mono truncate max-w-[80px]" title={`Assignee: ${task.subagentId}`}>
               {task.subagentId.slice(0, 8)}
             </span>
           )}

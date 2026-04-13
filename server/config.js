@@ -80,10 +80,11 @@ export const HOST = process.env.HOST || '127.0.0.1';
 export const OPENCLAW_DIR = normalizeDir(process.env.OPENCLAW_DIR || path.join(HOME, '.openclaw'));
 export const WORKSPACE = path.join(OPENCLAW_DIR, 'workspace');
 export const OPENCLAW_JSON = path.join(OPENCLAW_DIR, 'openclaw.json');
-export const TASKS_FILE = path.join(__dirname, 'data', 'tasks.json');
-export const ACTIVITY_FILE = path.join(__dirname, 'data', 'activity.json');
-export const HEARTBEAT_FILE = path.join(__dirname, 'data', 'heartbeat.json');
-export const SETTINGS_FILE = path.join(__dirname, 'data', 'settings.json');
+export const DATA_DIR = normalizeDir(process.env.VIDCLAW_DATA_DIR || path.join(__dirname, 'data'));
+export const TASKS_FILE = path.join(DATA_DIR, 'tasks.json');
+export const ACTIVITY_FILE = path.join(DATA_DIR, 'activity.json');
+export const HEARTBEAT_FILE = path.join(DATA_DIR, 'heartbeat.json');
+export const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
 
 const inferredOpenclawRoot = inferOpenclawInstallRoot(resolvePathExecutable('openclaw'));
 

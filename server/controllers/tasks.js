@@ -86,7 +86,7 @@ export function createTaskFromConversation(req, res) {
     order: tasks.filter(t => t.status === (autoStart ? 'in-progress' : 'backlog')).length,
     source: req.body.source || null,
     sourceMessageId: req.body.sourceMessageId || null,
-    subagentId: req.body.subagentId || null,
+    subagentId: req.body.assigneeId || req.body.subagentId || null,
     pickedUp: autoStart ? true : false,
   };
   tasks.push(task);
@@ -105,7 +105,7 @@ export function updateTask(req, res) {
   const idx = tasks.findIndex(t => t.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Not found' });
   const wasNotDone = tasks[idx].status !== 'done';
-  const allowedFields = ['title', 'description', 'priority', 'skill', 'skills', 'status', 'schedule', 'scheduledAt', 'scheduleEnabled', 'result', 'startedAt', 'completedAt', 'error', 'order', 'subagentId', 'channel', 'source', 'sourceMessageId'];
+  const allowedFields = ['title', 'description', 'priority', 'skill', 'skills', 'status', 'schedule', 'scheduledAt', 'scheduleEnabled', 'result', 'startedAt', 'completedAt', 'error', 'order', 'subagentId', 'assigneeId', 'channel', 'source', 'sourceMessageId'];
   const updates = {};
   for (const k of allowedFields) { if (req.body[k] !== undefined) updates[k] = req.body[k]; }
   tasks[idx] = { ...tasks[idx], ...updates, updatedAt: new Date().toISOString() };
@@ -200,9 +200,10 @@ export function pickupTask(req, res) {
   tasks[idx].status = 'in-progress';
   tasks[idx].startedAt = tasks[idx].startedAt || new Date().toISOString();
   tasks[idx].updatedAt = new Date().toISOString();
-  if (req.body.subagentId) tasks[idx].subagentId = req.body.subagentId;
+  if (req.body.assigneeId !== undefined) tasks[idx].subagentId = req.body.assigneeId || null;
+  if (req.body.subagentId !== undefined) tasks[idx].subagentId = req.body.subagentId || null;
   writeTasks(tasks);
-  logActivity('bot', 'task_pickup', { taskId: req.params.id, title: tasks[idx].title, subagentId: req.body.subagentId || null });
+  logActivity('bot', 'task_pickup', { taskId: req.params.id, title: tasks[idx].title, subagentId: req.body.assigneeId || req.body.subagentId || null });
   broadcast('tasks', tasks);
   res.json(tasks[idx]);
 }
