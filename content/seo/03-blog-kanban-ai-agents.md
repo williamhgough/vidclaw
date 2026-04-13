@@ -1,115 +1,172 @@
-# Managing AI Agents with Kanban Boards: Why Visual Task Management Changes Everything
+# Managing AI Agents with Background Tasks: Why Your Agent Needs an Activity Ledger
 
-*How VidClaw's kanban system turns chaotic AI agent workflows into something you can actually see and control.*
+*The difference between hoping your AI agent did the right thing and knowing it did.*
 
 ---
 
-Running an autonomous AI agent is exciting until it isn't. At first, you're amazed that your Claude-powered agent can write blog posts, review code, and manage files on its own. Then the novelty fades and you realize: you have no idea what it's working on, what's queued up, or what fell through the cracks.
+Running an autonomous AI agent through chat works until it doesn't. You ask for something, it starts working, you forget what you asked for, the session restarts, and you have no idea whether the work ever finished.
 
-Chat-based task management ("hey, can you also do X?") doesn't scale. You forget what you asked for. The agent forgets too — it wakes up fresh each session. Tasks get lost in conversation history.
+This is the problem OpenClaw's background task system solves. It's not a kanban board in the visual sense — it's better. An activity ledger that tracks every detached operation your agent performs, across every runtime (ACP, subagent, cron, CLI), in one place.
 
-This is the problem kanban boards solve for human teams. And it turns out they solve it for AI agents too.
+## Why Chat-Only Task Management Breaks Down
 
-## The Problem with Chat-Only Agent Management
-
-Most people manage their AI agents through conversation. It works like this:
-
+The chat-only model looks like this:
 1. You tell the agent to do something
-2. It does it (usually)
+2. It starts (probably)
 3. You think of three more things
-4. You tell it those too
-5. Some get done, some don't
-6. You forget what you asked for
-7. The agent's session restarts and it has no record of pending work
+4. Some get done, some don't
+5. The session restarts and pending work disappears
 
-Sound familiar? This is the same problem that plagued software teams before project management tools. The fix is the same too: make the work visible.
+This is fine for one-off conversations. It's unmanageable for anything that needs durable follow-up — recurring reports, background research, automation workflows, multi-step builds.
 
-## Why Kanban Works for AI Agents
+The fix isn't a kanban board. The fix is a **system that tracks work independent of session context** and lets you query state whenever you want.
 
-Kanban's core principles map perfectly to AI agent workflows:
+## OpenClaw's Task System
 
-### 1. Visualize the Work
-A kanban board shows you — at a glance — what's pending, what's in progress, and what's done. No digging through chat logs or memory files.
+OpenClaw creates a task record for every operation that runs outside your main chat session:
 
-### 2. Limit Work in Progress
-AI agents can context-switch, but they still work on one task at a time. A kanban board makes the queue explicit. Your agent processes tasks in priority order instead of whatever was mentioned last in chat.
+| Source | What it is |
+|--------|-----------|
+| ACP runs | Child sessions spawned for complex tasks |
+| Subagent orchestration | Isolated sessions for parallel work |
+| Cron jobs | Scheduled work, both main-session and isolated |
+| CLI operations | Background commands run via the agent |
 
-### 3. Make Policies Explicit
-Each card in VidClaw can have:
-- **Priority** (low / medium / high / critical)
-- **Assigned skill** (writer, coder, researcher, etc.)
-- **Description** with full context
+Normal chat turns don't create tasks. But every cron execution, every subagent spawn, every detached ACP run — these all get tracked.
 
-The agent reads these properties and acts accordingly. A critical task gets picked up before a low-priority one. A task assigned to the "writer" skill uses a different approach than one assigned to "coder."
+## The Task Lifecycle
 
-### 4. Manage Flow
-The four-column layout (Backlog → Todo → In Progress → Done) creates a natural pipeline:
+Every task moves through a simple state machine:
 
-- **Backlog**: Ideas and future work. The agent ignores these.
-- **Todo**: Ready to execute. The agent picks from this column.
-- **In Progress**: Currently being worked on. Only one task at a time.
-- **Done**: Completed. Review the output, archive, or reopen.
+```
+queued → running → succeeded / failed / timed_out / cancelled / lost
+```
 
-## How VidClaw Implements This
+`queued` means work is waiting. `running` means the agent is actively doing something. Terminal states (`succeeded`, `failed`, `timed_out`, `cancelled`) are what you care about — did the thing finish, and did it work?
 
-VidClaw's kanban board is purpose-built for AI agents, not adapted from a human project management tool. Here's what makes it different:
+`lost` is a runtime-aware state: it means the backing session or job disappeared before OpenClaw could confirm the outcome. This usually means something crashed hard.
 
-### Automatic Task Pickup
-Your OpenClaw agent checks the board on a schedule:
-- **Cron**: Every 2 minutes
-- **Heartbeat**: Every 30 minutes
+## What Tasks Track
 
-When it finds a card in "Todo," it moves it to "In Progress" and starts working. No manual trigger needed (though "Run Now" exists for impatient humans).
+Each task record contains:
+- **Runtime type** (ACP, subagent, cron, CLI)
+- **Status** (current state)
+- **Child session** (where the work actually ran)
+- **Timing** (queued at, started at, ended at)
+- **Delivery state** (was notification attempted, did it succeed)
+- **Error detail** (if it failed)
+- **Terminal summary** (human-readable outcome)
 
-### Conversation-to-Task Pipeline
-Tell your agent "add a task to review the PR on my-repo" in chat. VidClaw's API (`POST /api/tasks/from-conversation`) creates a card automatically. The best of both worlds — natural language input, structured execution.
+You can look up any task by ID, run ID, or session key.
 
-### Task Results
-When the agent finishes, it calls the completion API with a summary. The card moves to "Done" with the result attached. You can review output without reading through session transcripts.
+## The /tasks Board
 
-### Priority Queue
-Multiple cards in "Todo"? The agent picks the highest-priority one first. Ties are broken by creation date (oldest first). This means you can load up the board on Monday morning and trust the agent to work through it in the right order.
+In any chat session, type `/tasks` to see the task board for that session. It shows:
+- Active tasks (queued + running)
+- Recently completed tasks with status
+- Error details for failures
+- Timing information
 
-## A Real Workflow Example
+If your session has no linked tasks, it falls back to agent-local task counts — so you always get an overview without leaking other-session details.
 
-Here's how I use VidClaw's kanban board on a typical day:
+For the full operator ledger across all sessions, the CLI command is:
 
-**Morning (5 min):**
-1. Open VidClaw
-2. Review "Done" column — check yesterday's completed work
-3. Archive or reopen cards as needed
-4. Add 3-4 new cards to "Todo" with descriptions and priorities
+```bash
+openclaw tasks list
+```
+
+Filter by runtime or status:
+```bash
+openclaw tasks list --runtime cron --status failed
+openclaw tasks list --runtime subagent --status running
+```
+
+## Task Notifications
+
+By default, you only hear about terminal states (`succeeded`, `failed`, etc.). This is the `done_only` policy — you get pinged when something finishes, not while it's running.
+
+Change the policy while it's running:
+```bash
+openclaw tasks notify <lookup> state_changes
+```
+
+Or silence it entirely:
+```bash
+openclaw tasks notify <lookup> silent
+```
+
+For cron jobs specifically, the default is `silent` — they track without generating notifications. Isolate cron runs default to `done_only` instead.
+
+## Cron Jobs: Scheduling That Survives Restarts
+
+OpenClaw's cron system is where scheduled work lives. Definitions are stored in `~/.openclaw/cron/jobs.json`, and every execution — main-session or isolated — gets a task record.
+
+Main-session cron tasks run inside your current conversation session on a schedule. Isolated cron tasks run in their own session, detached from any chat context.
+
+Why it matters: if your agent is mid-conversation when a cron job fires, a main-session cron has to compete with whatever you're doing. An isolated cron runs independently — it won't interrupt your chat, and chat output won't interrupt it.
+
+Configuring a cron job through the Control UI (Sessions → Cron Jobs → New):
+- **Schedule**: cron expression or interval in milliseconds
+- **Session target**: `main`, `isolated`, or a named session
+- **Payload**: `systemEvent` (injects text into main session) or `agentTurn` (runs an isolated agent turn)
+- **Delivery**: announce to a channel, webhook POST, or none
+
+## The Heartbeat Distinction
+
+Heartbeat is different from cron. Heartbeat runs are **main-session turns** — they don't create task records. When a heartbeat fires, it runs inside your existing conversation context, not in a separate session.
+
+Tasks track detached work. Heartbeat is the mechanism for ongoing, session-bound maintenance — the agent doing light housekeeping, checking for work, updating logs, without creating a separate activity record.
+
+The two work together: a cron job can trigger a heartbeat, which in turn checks a task board and picks up work. The cron creates the task; the heartbeat processes it.
+
+## What This Looks like in Practice
+
+Here's my actual workflow:
+
+**Morning (2 min):**
+```bash
+openclaw tasks list --status failed
+```
+If anything failed overnight, I see it immediately. I check the error, fix the input, and re-run or cancel.
 
 **Throughout the day:**
-- Cards move from Todo → In Progress → Done automatically
-- I check in occasionally to see progress
-- If something urgent comes up, I add a "critical" card — it jumps the queue
+- `openclaw tasks list --runtime subagent --status running` — what's my agent working on right now?
+- `openclaw tasks show <id>` — get the full record for a specific task
+- `/tasks` in chat — quick glance without leaving my conversation
 
-**Evening (2 min):**
-- Quick scan of the board
-- Move half-baked ideas to Backlog for later
-- Done
+**Evening:**
+```bash
+openclaw tasks audit
+```
+This surfaces operational issues: stale queued tasks, tasks running too long, delivery failures. I address anything that looks like a pattern.
 
-Total hands-on time: under 10 minutes. The agent works the other 23 hours and 50 minutes.
+## Failure Handling
 
-## Tips for Effective AI Kanban
+The audit command is the first place I look when something goes wrong:
 
-**Write clear descriptions.** Your agent reads the card description as its task brief. "Write blog post" is worse than "Write a 1500-word blog post about self-hosting AI agents, targeting r/selfhosted audience, casual tone, include code examples."
+| Finding | Severity | What it means |
+|---------|----------|---------------|
+| `stale_queued` | warn | Queued more than 10 minutes, agent hasn't started |
+| `stale_running` | error | Running more than 30 minutes, might be hung |
+| `lost` | error | Backing state disappeared, outcome unknown |
+| `delivery_failed` | warn | Tried to notify but couldn't reach you |
+| `missing_cleanup` | warn | Terminal task never got cleaned up |
 
-**Use skills wisely.** If you've set up skills (writer, coder, researcher), assign them. The agent loads different tools and prompts depending on the skill.
+Task records are kept for 7 days, then automatically pruned. No manual cleanup needed.
 
-**Don't over-queue.** 5-10 cards in Todo is a good range. 50 cards creates cognitive overhead for you, not the agent — but it makes the board hard to scan.
+## Why This Is Better Than a Kanban Board
 
-**Review Done cards.** The agent marks work complete, but "complete" and "correct" aren't always the same. Spend 30 seconds reviewing each result.
+Kanban boards are visual, which is great for humans. But they require you to open them, read them, and interpret them. OpenClaw's task system is queryable — you can ask it questions:
 
-**Use Backlog as a parking lot.** Every idea doesn't need to be actionable today. Backlog keeps ideas visible without cluttering the active queue.
+- "What failed this week?"
+- "What's been running since yesterday?"
+- "Show me every task from the last 24 hours"
+- "Which cron jobs have never succeeded?"
 
-## Beyond Task Management
+You can't ask a kanban board that. And because tasks are created automatically by the runtime, you can't forget to add them — they capture the actual activity, not a subjective todo list.
 
-The kanban board is just one panel in VidClaw. Combined with usage tracking (are you burning through tokens too fast?), the activity calendar (is your agent actually working when you think it is?), and the soul editor (does your agent understand what you want?), you get a complete picture of your AI agent's operations.
-
-It's the difference between hoping your agent is doing the right thing and *knowing* it is.
+The goal isn't visual organization. The goal is **accountability**: knowing what your agent did, when it did it, and whether it worked.
 
 ---
 
-*VidClaw is open-source, self-hosted, and MIT-licensed. [Try it →](https://github.com/madrzak/vidclaw)*
+*OpenClaw's task system ships in the box. `openclaw tasks --help` for the full CLI reference.*
