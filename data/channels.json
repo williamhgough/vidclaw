@@ -1,0 +1,10 @@
+[
+  { "id": "forge", "label": "Forge", "icon": "Wrench" },
+  { "id": "vector", "label": "Vector", "icon": "Brain" },
+  { "id": "ledger", "label": "Ledger", "icon": "CreditCard" },
+  { "id": "harbor", "label": "Harbor", "icon": "Anchor" },
+  { "id": "telegram", "label": "Telegram", "icon": "MessageCircle" },
+  { "id": "discord", "label": "Discord", "icon": "Hash" },
+  { "id": "whatsapp", "label": "WhatsApp", "icon": "Smartphone" },
+  { "id": "slack", "label": "Slack", "icon": "Slack" }
+]
