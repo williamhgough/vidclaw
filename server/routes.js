@@ -19,6 +19,7 @@ import { getVidclawVersion, updateVidclaw } from './controllers/vidclaw.js';
 import { uploadAttachment, serveAttachment, deleteAttachment, listAttachments } from './controllers/attachments.js';
 import { listCredentials, putCredential, deleteCredential } from './controllers/credentials.js';
 import { listChannels } from './controllers/channels.js';
+import { listAgents, spawnAgent } from './controllers/agents.js';
 
 const router = Router();
 
@@ -50,6 +51,10 @@ router.get('/api/calendar', getCalendar);
 
 // Channels
 router.get('/api/channels', listChannels);
+
+// Agents
+router.get('/api/agents', listAgents);
+router.post('/api/agents/spawn', spawnAgent);
 
 // Usage
 router.get('/api/usage', getUsage);

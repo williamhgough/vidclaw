@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 import AttachmentSection from './AttachmentSection'
 import { extractFilePaths } from './TaskCard'
 import { api } from '@/lib/api'
-import type { Task, Skill, Attachment, ActivityEntry, CreateTaskRequest, UpdateTaskRequest } from '@/types/api'
+import type { Task, Skill, Attachment, ActivityEntry, CreateTaskRequest, UpdateTaskRequest, AgentInfo } from '@/types/api'
 
 function formatTime(iso: string | null | undefined): string {
   if (!iso) return ''
@@ -256,6 +256,8 @@ export default function TaskDialog({ open, onClose, onSave, onDelete, task, defa
   const [skills, setSkills] = useState<Skill[]>([])
   const [attachments, setAttachments] = useState<Attachment[]>([])
   const [attKey, setAttKey] = useState(0)
+  const [agents, setAgents] = useState<AgentInfo[]>([])
+  const [spawnBusy, setSpawnBusy] = useState(false)
 
   const refreshAttachments = () => {
     if (!task?.id) return
@@ -272,13 +274,14 @@ export default function TaskDialog({ open, onClose, onSave, onDelete, task, defa
 
   useEffect(() => {
     api.skills.list().then(setSkills).catch(() => {})
+    api.agents.list().then(setAgents).catch(() => {})
   }, [])
 
   useEffect(() => {
     if (task) {
       const taskSkills = task.skills && task.skills.length ? task.skills : (task.skill ? [task.skill] : [])
       const sched = parseSchedule(task.schedule)
-      setForm({ title: task.title, description: task.description, skills: taskSkills, status: task.status, assigneeId: task.subagentId || '', scheduleMode: sched.mode, scheduleInterval: sched.interval, schedulePeriod: sched.period, scheduleTime: sched.time, scheduleCron: sched.cron })
+      setForm({ title: task.title, description: task.description, skills: taskSkills, status: task.status, assigneeId: task.subagentId || task.assigneeId || '', scheduleMode: sched.mode, scheduleInterval: sched.interval, schedulePeriod: sched.period, scheduleTime: sched.time, scheduleCron: sched.cron })
     } else {
       setForm({ title: '', description: '', skills: [], status: defaultStatus, assigneeId: '', scheduleMode: 'none', scheduleInterval: 1, schedulePeriod: 'days', scheduleTime: '09:00', scheduleCron: '' })
     }
@@ -352,14 +355,45 @@ export default function TaskDialog({ open, onClose, onSave, onDelete, task, defa
             </div>
 
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Assignee Agent</label>
-              <input
-                className="w-full bg-secondary border border-border rounded-md px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary"
-                value={form.assigneeId}
-                onChange={e => setForm(f => ({ ...f, assigneeId: e.target.value }))}
-                placeholder="forge, vector, ledger, harbor..."
-              />
-              <p className="mt-1 text-[11px] text-muted-foreground">Enter an agent ID, or leave blank to keep it unassigned.</p>
+              <label className="text-xs text-muted-foreground mb-1 block">Assignee Agent Session</label>
+              <div className="flex gap-2">
+                <select
+                  className="flex-1 bg-secondary border border-border rounded-md px-3 py-2 text-sm outline-none"
+                  value={form.assigneeId}
+                  onChange={e => setForm(f => ({ ...f, assigneeId: e.target.value }))}
+                >
+                  <option value="">Unassigned</option>
+                  {agents.map(a => (
+                    <option key={a.id} value={a.id}>
+                      {a.identityName || a.id}{a.isDefault ? ' (default)' : ''}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  disabled={spawnBusy || !form.title.trim()}
+                  onClick={async () => {
+                    const chosen = agents.find(a => a.id === form.assigneeId) || agents[0]
+                    if (!chosen) return
+                    setSpawnBusy(true)
+                    try {
+                      const result = await api.agents.spawn({
+                        agent: chosen.id,
+                        message: `${form.title}\n\n${form.description || ''}`.trim(),
+                        thinking: 'low',
+                      })
+                      const sessionId = (result.sessionId || result.id || '') as string
+                      if (sessionId) setForm(f => ({ ...f, assigneeId: sessionId }))
+                    } finally {
+                      setSpawnBusy(false)
+                    }
+                  }}
+                  className="px-3 py-2 text-xs rounded-md bg-primary/15 text-primary hover:bg-primary/25 disabled:opacity-50"
+                >
+                  {spawnBusy ? 'Spawning…' : 'Spawn agent'}
+                </button>
+              </div>
+              <p className="mt-1 text-[11px] text-muted-foreground">Pick an agent, or click Spawn agent to create a fresh session and assign it here.</p>
             </div>
 
             <div>

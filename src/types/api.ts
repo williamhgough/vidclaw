@@ -168,6 +168,33 @@ export interface Channel {
   icon: string
 }
 
+export interface AgentInfo {
+  id: string
+  identityName?: string
+  identityEmoji?: string
+  identitySource?: string
+  workspace?: string
+  agentDir?: string
+  model?: string
+  bindings?: number
+  isDefault?: boolean
+  routes?: string[]
+  providers?: string[]
+}
+
+export interface SpawnAgentRequest {
+  agent: string
+  message: string
+  thinking?: string
+}
+
+export interface SpawnAgentResponse {
+  raw?: string
+  sessionId?: string
+  id?: string
+  [key: string]: unknown
+}
+
 export interface Session {
   id: string
   label: string | null

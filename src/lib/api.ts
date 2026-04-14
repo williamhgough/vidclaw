@@ -13,6 +13,9 @@ import type {
   Attachment,
   VersionInfo,
   Channel,
+  AgentInfo,
+  SpawnAgentRequest,
+  SpawnAgentResponse,
   MemoryFile,
   SessionList,
   SessionDetail,
@@ -188,7 +191,12 @@ export const api = {
   },
 
   channels: {
-    list: () => request<Channel[]>("/api/channels"),
+    list: () => request<Channel[]>('/api/channels'),
+  },
+
+  agents: {
+    list: () => request<AgentInfo[]>('/api/agents'),
+    spawn: (data: SpawnAgentRequest) => post<SpawnAgentResponse>('/api/agents/spawn', data),
   },
 
   version: {
