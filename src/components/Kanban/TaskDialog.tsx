@@ -250,9 +250,10 @@ interface TaskDialogProps {
   onDelete?: (id: string) => void
   task: Task | null
   defaultStatus?: string
+  defaultChannel?: string
 }
 
-export default function TaskDialog({ open, onClose, onSave, onDelete, task, defaultStatus = 'backlog' }: TaskDialogProps) {
+export default function TaskDialog({ open, onClose, onSave, onDelete, task, defaultStatus = 'backlog', defaultChannel = '' }: TaskDialogProps) {
   const [form, setForm] = useState<TaskForm>({ title: '', description: '', skills: [], status: 'backlog', channel: '', assigneeId: '', scheduleMode: 'none', scheduleInterval: 1, schedulePeriod: 'days', scheduleTime: '09:00', scheduleCron: '' })
   const [skills, setSkills] = useState<Skill[]>([])
   const [attachments, setAttachments] = useState<Attachment[]>([])
@@ -281,9 +282,9 @@ export default function TaskDialog({ open, onClose, onSave, onDelete, task, defa
     if (task) {
       const taskSkills = task.skills && task.skills.length ? task.skills : (task.skill ? [task.skill] : [])
       const sched = parseSchedule(task.schedule)
-      setForm({ title: task.title, description: task.description, skills: taskSkills, status: task.status, channel: task.channel || '', assigneeId: task.subagentId || '', scheduleMode: sched.mode, scheduleInterval: sched.interval, schedulePeriod: sched.period, scheduleTime: sched.time, scheduleCron: sched.cron })
+      setForm({ title: task.title, description: task.description, skills: taskSkills, status: task.status, channel: task.channel || defaultChannel || '', assigneeId: task.subagentId || '', scheduleMode: sched.mode, scheduleInterval: sched.interval, schedulePeriod: sched.period, scheduleTime: sched.time, scheduleCron: sched.cron })
     } else {
-      setForm({ title: '', description: '', skills: [], status: defaultStatus, channel: '', assigneeId: '', scheduleMode: 'none', scheduleInterval: 1, schedulePeriod: 'days', scheduleTime: '09:00', scheduleCron: '' })
+      setForm({ title: '', description: '', skills: [], status: defaultStatus, channel: defaultChannel || '', assigneeId: '', scheduleMode: 'none', scheduleInterval: 1, schedulePeriod: 'days', scheduleTime: '09:00', scheduleCron: '' })
     }
   }, [task, open, defaultStatus])
 
