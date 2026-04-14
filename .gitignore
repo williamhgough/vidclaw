@@ -14,3 +14,6 @@ seed-demo.js
 openclaw-ref/
 # runtime state kept outside the app tree when VIDCLAW_DATA_DIR is set
 vidclaw-data/
+data/activity.json
+data/vidclaw.pid
+server/data/tasks.json

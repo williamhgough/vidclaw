@@ -50,6 +50,8 @@ export function createTask(req, res) {
     startedAt: null,
     error: null,
     channel: req.body.channel || null,
+    subagentId: req.body.assigneeId || null,
+    assigneeId: req.body.assigneeId || null,
     order: req.body.order ?? tasks.filter(t => t.status === (req.body.status || 'backlog')).length,
     source: req.body.source || null,
     sourceMessageId: req.body.sourceMessageId || null,
@@ -87,6 +89,7 @@ export function createTaskFromConversation(req, res) {
     source: req.body.source || null,
     sourceMessageId: req.body.sourceMessageId || null,
     subagentId: req.body.assigneeId || req.body.subagentId || null,
+    assigneeId: req.body.assigneeId || req.body.subagentId || null,
     pickedUp: autoStart ? true : false,
   };
   tasks.push(task);
@@ -119,6 +122,8 @@ export function updateTask(req, res) {
       tasks[idx].scheduleEnabled = false;
     }
   }
+  if (updates.assigneeId !== undefined && updates.subagentId === undefined) tasks[idx].subagentId = updates.assigneeId;
+  if (updates.subagentId !== undefined && updates.assigneeId === undefined) tasks[idx].assigneeId = updates.subagentId;
   if (wasNotDone && tasks[idx].status === 'done') tasks[idx].completedAt = new Date().toISOString();
   if (tasks[idx].status !== 'done') tasks[idx].completedAt = null;
   writeTasks(tasks);
