@@ -17,7 +17,7 @@ function getVersion(): string {
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const apiTarget = env.VITE_API_TARGET || 'http://localhost:3333'
-  const basePath = env.VITE_BASE_PATH || '/'
+  const basePath = env.VITE_BASE_PATH || '/vidclaw/'
 
   return {
     base: basePath,
