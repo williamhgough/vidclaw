@@ -19,3 +19,6 @@
 - [ ] Research Moltbook and AgentHansa task surfaces
 - [ ] Draft 10 Chrome extension concepts with pricing
 - [ ] Identify 3 Solana data-only angles worth testing
+- [ ] Research how to execute a faceless AI YouTube channel for Mimir Works
+  - Goal: find the repeatable workflow, tools, and distribution loop.
+  - Outcome: a concrete production playbook, not just inspiration.
