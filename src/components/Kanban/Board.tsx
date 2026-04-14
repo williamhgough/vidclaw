@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors, pointerWithin, rectIntersection, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core'
 import { arrayMove } from '@dnd-kit/sortable'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import Column from './Column'
 import TaskCard from './TaskCard'
 import TaskDialog from './TaskDialog'
@@ -10,7 +10,7 @@ import PageSkeleton from '../PageSkeleton'
 import PixelBotView from '../PixelBot'
 import { useTasks, useTaskCapacity } from '@/hooks/queries/useTasks'
 import { api } from '@/lib/api'
-import type { Task, Capacity, CreateTaskRequest, UpdateTaskRequest, Channel } from '@/types/api'
+import type { Task, Capacity, CreateTaskRequest, UpdateTaskRequest } from '@/types/api'
 
 interface ColumnDef {
   id: string
@@ -31,9 +31,7 @@ interface BoardProps {
 
 export default function Board({ visible = true }: BoardProps) {
   const queryClient = useQueryClient()
-  const [selectedBoard, setSelectedBoard] = useState<string>('all')
-  const { data: channels = [] } = useQuery<Channel[]>({ queryKey: ['channels'], queryFn: api.channels.list })
-  const tasksQuery = useTasks({ channel: selectedBoard === 'all' ? undefined : selectedBoard })
+  const tasksQuery = useTasks()
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -65,7 +63,7 @@ export default function Board({ visible = true }: BoardProps) {
 
   const activeTask = tasks.find(t => t.id === activeId)
 
-  const visibleTasks = selectedBoard === 'all' ? tasks : tasks.filter(t => (t.channel || '') === selectedBoard)
+  const visibleTasks = tasks
 
   function getColumnTasks(columnId: string): Task[] {
     const filtered = visibleTasks.filter(t => t.status === columnId)
@@ -148,7 +146,7 @@ export default function Board({ visible = true }: BoardProps) {
   }
 
   async function handleSave(data: CreateTaskRequest | UpdateTaskRequest): Promise<void> {
-    const scopedData = editTask ? data : { ...data, channel: (data as CreateTaskRequest).channel ?? (selectedBoard === 'all' ? null : selectedBoard) }
+    const scopedData = data
     if (editTask) {
       await api.tasks.update(editTask.id, scopedData as UpdateTaskRequest)
     } else {
@@ -222,28 +220,6 @@ export default function Board({ visible = true }: BoardProps) {
         >
           🤖 Pixel Bot
         </button>
-        <span className="mx-1 h-4 w-px bg-border" />
-        <button
-          onClick={() => setSelectedBoard('all')}
-          aria-pressed={selectedBoard === 'all'}
-          className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-            selectedBoard === 'all' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          All
-        </button>
-        {channels.map(ch => (
-          <button
-            key={ch.id}
-            onClick={() => setSelectedBoard(ch.id)}
-            aria-pressed={selectedBoard === ch.id}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-              selectedBoard === ch.id ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {ch.label}
-          </button>
-        ))}
       </div>
 
       <div className={`flex-1 min-h-0 ${view === 'pixelbot' ? '' : 'hidden'}`}>
@@ -286,7 +262,6 @@ export default function Board({ visible = true }: BoardProps) {
         onDelete={handleDelete}
         task={editTask}
         defaultStatus={newTaskStatus}
-        defaultChannel={selectedBoard === 'all' ? '' : selectedBoard}
       />
     </div>
   )

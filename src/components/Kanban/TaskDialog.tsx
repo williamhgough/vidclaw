@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 import AttachmentSection from './AttachmentSection'
 import { extractFilePaths } from './TaskCard'
 import { api } from '@/lib/api'
-import type { Task, Skill, Channel, Attachment, ActivityEntry, CreateTaskRequest, UpdateTaskRequest } from '@/types/api'
+import type { Task, Skill, Attachment, ActivityEntry, CreateTaskRequest, UpdateTaskRequest } from '@/types/api'
 
 function formatTime(iso: string | null | undefined): string {
   if (!iso) return ''
@@ -234,7 +234,6 @@ interface TaskForm {
   description: string
   skills: string[]
   status: string
-  channel: string
   assigneeId: string
   scheduleMode: 'none' | 'interval' | 'cron'
   scheduleInterval: number
@@ -250,15 +249,13 @@ interface TaskDialogProps {
   onDelete?: (id: string) => void
   task: Task | null
   defaultStatus?: string
-  defaultChannel?: string
 }
 
-export default function TaskDialog({ open, onClose, onSave, onDelete, task, defaultStatus = 'backlog', defaultChannel = '' }: TaskDialogProps) {
-  const [form, setForm] = useState<TaskForm>({ title: '', description: '', skills: [], status: 'backlog', channel: '', assigneeId: '', scheduleMode: 'none', scheduleInterval: 1, schedulePeriod: 'days', scheduleTime: '09:00', scheduleCron: '' })
+export default function TaskDialog({ open, onClose, onSave, onDelete, task, defaultStatus = 'backlog' }: TaskDialogProps) {
+  const [form, setForm] = useState<TaskForm>({ title: '', description: '', skills: [], status: 'backlog', assigneeId: '', scheduleMode: 'none', scheduleInterval: 1, schedulePeriod: 'days', scheduleTime: '09:00', scheduleCron: '' })
   const [skills, setSkills] = useState<Skill[]>([])
   const [attachments, setAttachments] = useState<Attachment[]>([])
   const [attKey, setAttKey] = useState(0)
-  const [channels, setChannels] = useState<Channel[]>([])
 
   const refreshAttachments = () => {
     if (!task?.id) return
@@ -275,16 +272,15 @@ export default function TaskDialog({ open, onClose, onSave, onDelete, task, defa
 
   useEffect(() => {
     api.skills.list().then(setSkills).catch(() => {})
-    api.channels.list().then(setChannels).catch(() => {})
   }, [])
 
   useEffect(() => {
     if (task) {
       const taskSkills = task.skills && task.skills.length ? task.skills : (task.skill ? [task.skill] : [])
       const sched = parseSchedule(task.schedule)
-      setForm({ title: task.title, description: task.description, skills: taskSkills, status: task.status, channel: task.channel || defaultChannel || '', assigneeId: task.subagentId || '', scheduleMode: sched.mode, scheduleInterval: sched.interval, schedulePeriod: sched.period, scheduleTime: sched.time, scheduleCron: sched.cron })
+      setForm({ title: task.title, description: task.description, skills: taskSkills, status: task.status, assigneeId: task.subagentId || '', scheduleMode: sched.mode, scheduleInterval: sched.interval, schedulePeriod: sched.period, scheduleTime: sched.time, scheduleCron: sched.cron })
     } else {
-      setForm({ title: '', description: '', skills: [], status: defaultStatus, channel: defaultChannel || '', assigneeId: '', scheduleMode: 'none', scheduleInterval: 1, schedulePeriod: 'days', scheduleTime: '09:00', scheduleCron: '' })
+      setForm({ title: '', description: '', skills: [], status: defaultStatus, assigneeId: '', scheduleMode: 'none', scheduleInterval: 1, schedulePeriod: 'days', scheduleTime: '09:00', scheduleCron: '' })
     }
   }, [task, open, defaultStatus])
 
@@ -303,7 +299,7 @@ export default function TaskDialog({ open, onClose, onSave, onDelete, task, defa
       : form.scheduleMode === 'interval' ? buildScheduleString(form)
       : null
     const { scheduleMode, scheduleInterval, schedulePeriod, scheduleTime, scheduleCron, ...rest } = form
-    const data = { ...rest, skill: rest.skills[0] || '', schedule, channel: rest.channel || null, assigneeId: rest.assigneeId || null }
+    const data = { ...rest, skill: rest.skills[0] || '', schedule, assigneeId: rest.assigneeId || null }
     onSave(data)
   }
 
@@ -356,17 +352,14 @@ export default function TaskDialog({ open, onClose, onSave, onDelete, task, defa
             </div>
 
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Channel</label>
-              <select
-                className="w-full bg-secondary border border-border rounded-md px-3 py-2 text-sm outline-none"
-                value={form.channel}
-                onChange={e => setForm(f => ({ ...f, channel: e.target.value }))}
-              >
-                <option value="">Main Session (default)</option>
-                {channels.map(ch => (
-                  <option key={ch.id} value={ch.id}>{ch.label}</option>
-                ))}
-              </select>
+              <label className="text-xs text-muted-foreground mb-1 block">Assignee Agent</label>
+              <input
+                className="w-full bg-secondary border border-border rounded-md px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary"
+                value={form.assigneeId}
+                onChange={e => setForm(f => ({ ...f, assigneeId: e.target.value }))}
+                placeholder="forge, vector, ledger, harbor..."
+              />
+              <p className="mt-1 text-[11px] text-muted-foreground">Enter an agent ID, or leave blank to keep it unassigned.</p>
             </div>
 
             <div>
