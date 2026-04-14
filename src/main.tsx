@@ -33,7 +33,10 @@ const queryClient = new QueryClient({
   },
 })
 
-const router = createRouter({ routeTree })
+const router = createRouter({
+  routeTree,
+  basepath: import.meta.env.VITE_BASE_PATH || '/'
+})
 
 declare module "@tanstack/react-router" {
   interface Register {
