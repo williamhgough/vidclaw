@@ -20,8 +20,10 @@ import type {
   SoulTemplate,
 } from "@/types/api"
 
+const API_BASE = import.meta.env.BASE_URL === '/' ? '' : import.meta.env.BASE_URL.replace(/\/$/, '')
+
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, init)
+  const res = await fetch(`${API_BASE}${url}`, init)
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText)
     throw new Error(text || `${res.status} ${res.statusText}`)
@@ -74,7 +76,7 @@ export const api = {
       upload: async (taskId: string, file: File) => {
         const form = new FormData()
         form.append("file", file)
-        const res = await fetch(`/api/tasks/${taskId}/attachments`, {
+        const res = await fetch(`${API_BASE}/api/tasks/${taskId}/attachments`, {
           method: "POST",
           body: form,
         })
@@ -82,7 +84,7 @@ export const api = {
         return res.json() as Promise<Attachment>
       },
       delete: (taskId: string, filename: string) =>
-        del<{ ok: true }>(`/api/tasks/${taskId}/attachments/${encodeURIComponent(filename)}`),
+        del<{ ok: true }>(`${API_BASE}/api/tasks/${taskId}/attachments/${encodeURIComponent(filename)}`),
     },
   },
 
