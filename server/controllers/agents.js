@@ -1,7 +1,30 @@
+import fs from 'fs';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
+import { OPENCLAW_JSON } from '../config.js';
 
 const execFileAsync = promisify(execFile);
+
+function readAgentList() {
+  try {
+    const cfg = JSON.parse(fs.readFileSync(OPENCLAW_JSON, 'utf8'));
+    return Array.isArray(cfg?.agents?.list) ? cfg.agents.list.map((agent) => ({
+      id: agent.id,
+      identityName: agent.identity?.name || agent.identityName || agent.id,
+      identityEmoji: agent.identity?.emoji || agent.identityEmoji || '',
+      identitySource: agent.identitySource || 'identity',
+      workspace: agent.workspace,
+      agentDir: agent.agentDir,
+      model: agent.model?.primary || agent.model,
+      bindings: agent.bindings,
+      isDefault: !!agent.default,
+      routes: agent.routes || [],
+      providers: agent.providers || [],
+    })) : [];
+  } catch {
+    return [];
+  }
+}
 
 async function runOpenClaw(args) {
   const { stdout } = await execFileAsync('openclaw', args, {
@@ -18,12 +41,7 @@ async function runOpenClaw(args) {
 }
 
 export async function listAgents(req, res) {
-  try {
-    const data = await runOpenClaw(['agents', 'list', '--json']);
-    res.json(Array.isArray(data) ? data : data.items || []);
-  } catch (err) {
-    res.status(500).json({ error: err?.message || String(err) });
-  }
+  res.json(readAgentList());
 }
 
 export async function spawnAgent(req, res) {
