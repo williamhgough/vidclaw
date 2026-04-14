@@ -50,3 +50,5 @@ npm run dev
 ## Security & Configuration Tips
 - Keep the service bound to localhost (`127.0.0.1:3333`); use SSH tunneling for remote access.
 - Prefer `OPENCLAW_DIR` and `OPENCLAW_API` environment variables over hardcoded machine-specific paths.
+- If VidClaw is found down during a check, restart it immediately.
+- If VidClaw is already healthy, just ping-check it and move on.
