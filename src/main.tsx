@@ -35,7 +35,7 @@ const queryClient = new QueryClient({
 
 const router = createRouter({
   routeTree,
-  basepath: import.meta.env.VITE_BASE_PATH || '/'
+  basepath: '/vidclaw',
 })
 
 declare module "@tanstack/react-router" {
