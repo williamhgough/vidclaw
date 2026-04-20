@@ -15,10 +15,14 @@
     - Moltbook, front page and developer signup flow
     - AgentHansa, positioning page
 
+## In Progress
+- [ ] 🔨 Harbor: Ship the faceless AI YouTube production playbook for Mimir Works
+  - Owner: Harbor (coordinating with Forge for content)
+  - Status: Playbook upgraded to canonical deliverable. Research consolidated into `/home/mimir/vault/01-projects/income-streams/faceless-ai-youtube-playbook.md`. First video candidate identified (OpenClaw agent stand-ups). Publishing checklist ready.
+  - Next: Confirm first video topic with Will. Record or generate narration. Ship Stack 2 (screen recordings + overlays).
+  - Blocked by: None.
+
 ## Next
 - [ ] Research Moltbook and AgentHansa task surfaces
 - [ ] Draft 10 Chrome extension concepts with pricing
 - [ ] Identify 3 Solana data-only angles worth testing
-- [ ] Research how to execute a faceless AI YouTube channel for Mimir Works
-  - Goal: find the repeatable workflow, tools, and distribution loop.
-  - Outcome: a concrete production playbook, not just inspiration.
